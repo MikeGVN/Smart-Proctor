@@ -1,0 +1,24 @@
+SmartProctor_V2/
+├── data/                    (Giả lập Database)
+│   ├── exams.json           (Lưu đề thi)
+│   ├── teachers.json        (Lưu tk giáo viên)
+│   └── results.json         (Lưu kết quả)
+├── public/
+│   ├── css/
+│   │   └── style.css        (Giao diện chung)
+│   ├── js/                  (Xử lý Logic Frontend)
+│   │   └──	exam-logic.js
+│   ├── student/
+│   │   ├── index.html       (Trang Login)
+│   │   ├── face-check.html  (Trang Check Face ID)
+│   │   ├── score.html	     (Trang điểm)
+│   │   └── exam.html        (Trang làm bài)
+│   └── teacher/
+│       ├── dashboard.html   (Quản lý đề)
+│       ├── create.html      (Tạo đề)
+│ 		├──	exam-detail.html (xem bài kiểm tra chi tiết)
+│ 		├──	login.html       (Trang login của GV)
+│       └── monitor.html     (Giám sát)
+├── server.js                (Backend chính)
+├── package-lock.json		 (Cấm đụng)
+└── package.json

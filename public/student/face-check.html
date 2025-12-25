@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+    <meta charset="UTF-8">
+    <title>Xác Thực Khuôn Mặt - Smart Proctor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    
+    <style>
+        .scan-line {
+            position: absolute; width: 100%; height: 3px;
+            background: #00ff00; box-shadow: 0 0 10px #00ff00;
+            top: 0; animation: scanAnim 2s infinite linear;
+            display: none; z-index: 5;
+        }
+        @keyframes scanAnim { 0% {top: 0;} 100% {top: 100%;} }
+        
+        .output_canvas {
+            width: 100%; height: auto; object-fit: contain;
+            border-radius: 12px; transform: scaleX(-1); display: block;
+        }
+        
+        /* [MỚI] Khung hướng dẫn vị trí mặt */
+        .face-guide-box {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px; height: 300px; /* Kích thước khung tiêu chuẩn */
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 100px; /* Hình oval cho giống khuôn mặt */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Làm tối vùng bên ngoài */
+            pointer-events: none;
+            z-index: 4;
+            transition: border-color 0.3s;
+        }
+
+        .guide-box {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 30px;
+            color: white; font-size: 1rem; white-space: nowrap; z-index: 10;
+        }
+        
+        .progress-bar { transition: width 0.3s ease-in-out; }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+</head>
+<body>
+    <nav class="glass-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="#" class="brand-logo"><i class="fas fa-rocket me-2"></i> Smart Proctor</a>
+            <span class="fw-bold text-secondary"><i class="fas fa-id-card-alt me-2"></i> FaceID Check</span>
+        </div>
+    </nav>
+
+    <div class="login-wrapper position-relative">
+        <div class="glass-card text-center" style="max-width: 600px;">
+            <h3 class="fw-bold mb-3">🔐 Quét Khuôn Mặt Gốc</h3>
+            <p class="text-muted mb-4">Ngồi thẳng, mặt nằm trong khung, giữ vẻ mặt bình thường (không cười/nhăn).</p>
+
+            <div class="position-relative mx-auto rounded-4 overflow-hidden shadow-sm border border-secondary" 
+                 style="width: 100%; max-width: 600px; min-height: 450px; background: #000;">
+                
+                <video class="input_video" autoplay playsinline muted style="display:none"></video>
+                <canvas class="output_canvas"></canvas>
+                
+                <div id="face-box" class="face-guide-box"></div>
+                
+                <div class="scan-line" id="scanner"></div>
+                
+                <div id="video-guide" class="guide-box">
+                    <i class="fas fa-spinner fa-spin me-1"></i> Đang khởi động Camera...
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5 id="status" class="fw-bold text-warning">Chờ tín hiệu...</h5>
+                
+                <div class="progress mt-3 mx-auto" style="width: 80%; height: 8px; background-color: #e9ecef; display:none" id="progress-container">
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="progress-bar" style="width: 0%"></div>
+                </div>
+
+                <button id="btn-start" class="btn btn-gradient-primary mt-4 px-5 py-2 animate__animated animate__fadeInUp" style="display:none" onclick="startExam()">
+                    BẮT ĐẦU LÀM BÀI <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.querySelector('.input_video');
+        const canvasElement = document.querySelector('.output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const guideEl = document.getElementById('video-guide');
+        const scannerEl = document.getElementById('scanner');
+        const faceBoxEl = document.getElementById('face-box');
+        
+        // --- LOGIC VARIABLES ---
+        let sampleCount = 0;
+        const REQUIRED_SAMPLES = 40; // Tăng lên 40 frame để bắt buộc giữ yên lâu hơn
+        let faceVectorSum = Array(5).fill(0);
+        let isHandDetected = false;
+        let isProcessing = false; 
+        let frameCounter = 0;
+        let isFinished = false; 
+        let allowNavigation = false;
+
+        window.addEventListener('beforeunload', (e) => {
+            if (!allowNavigation) { e.preventDefault(); e.returnValue = ''; }
+        });
+
+        // MEDIA PIPE SETUP
+        // Lưu ý: refineLandmarks: true là BẮT BUỘC để lấy điểm mống mắt (Iris)
+        const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+        faceMesh.setOptions({maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6});
+        faceMesh.onResults(onFaceResults);
+
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
+        hands.onResults(onHandResults);
+
+        // Helper: Tính khoảng cách Euclidean
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function calculateFaceSignature(landmarks) {
+            const eyeDist = getDistance(landmarks[33], landmarks[263]); 
+            if(eyeDist === 0) return null;
+            return [
+                getDistance(landmarks[1], landmarks[152]) / eyeDist, 
+                getDistance(landmarks[10], landmarks[152]) / eyeDist, 
+                getDistance(landmarks[61], landmarks[291]) / eyeDist, 
+                getDistance(landmarks[1], landmarks[454]) / eyeDist, 
+                getDistance(landmarks[1], landmarks[234]) / eyeDist
+            ];
+        }
+
+        function onHandResults(results) {
+            // Chỉ phát hiện tay nếu độ tin cậy cao để tránh báo ảo
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                isHandDetected = true;
+            } else {
+                isHandDetected = false;
+            }
+        }
+
+        // --- HÀM MỚI: KIỂM TRA MẮT NHÌN THẲNG (GAZE TRACKING) ---
+        function getGazeRatio(pIris, pInner, pOuter) {
+            // Tính khoảng cách từ mống mắt đến khóe mắt trong và ngoài
+            const distToInner = getDistance(pIris, pInner);
+            const distToOuter = getDistance(pIris, pOuter);
+            const totalDist = distToInner + distToOuter;
+            if (totalDist === 0) return 0.5;
+            return distToInner / totalDist; // 0.5 là chính giữa, <0.4 là nhìn trái, >0.6 là nhìn phải
+        }
+
+        // --- PHIÊN BẢN FINAL: SẠCH SẼ & CHUẨN XÁC ---
+        function onFaceResults(results) {
+            if (isFinished) return;
+
+            // Sync Canvas
+            if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
+                if (videoElement.videoWidth > 0) {
+                    canvasElement.width = videoElement.videoWidth;
+                    canvasElement.height = videoElement.videoHeight;
+                }
+            }
+
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // Vẽ ảnh bình thường (CSS sẽ lo việc lật gương)
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // 1. CHECK TAY
+            if (isHandDetected) {
+                updateUI("warning", "Bỏ tay ra khỏi mặt!", false);
+                faceBoxEl.style.borderColor = "#dc3545";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            // 2. CHECK CÓ MẶT KHÔNG
+            if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+                updateUI("danger", "Không thấy khuôn mặt!", false);
+                faceBoxEl.style.borderColor = "rgba(255, 255, 255, 0.5)";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            const landmarks = results.multiFaceLandmarks[0];
+
+            // 3. CHECK VỊ TRÍ TRONG KHUNG
+            // (Giữ logic cũ đã ổn)
+            const leftLimit = 0.5 - 0.20; 
+            const rightLimit = 0.5 + 0.20; 
+            const topLimit = 0.5 - 0.35; 
+            const bottomLimit = 0.5 + 0.35; 
+            const topY = landmarks[10].y;
+            const chinY = landmarks[152].y;
+            const leftX = landmarks[234].x;
+            const rightX = landmarks[454].x;
+
+            const isInsideBox = (leftX > leftLimit && rightX < rightLimit && topY > topLimit && chinY < bottomLimit);
+
+            if (!isInsideBox) {
+                updateUI("warning", "Di chuyển mặt vào giữa khung!", false);
+                faceBoxEl.style.borderColor = "#ffc107";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            // 4. CHECK GÓC MẶT (YAW - QUAY TRÁI/PHẢI)
+            const faceWidth = getDistance(landmarks[234], landmarks[454]);
+            const distToLeft = getDistance(landmarks[1], landmarks[234]);
+            const yawRatio = distToLeft / faceWidth; 
+            
+            // Threshold đã nới lỏng hợp lý: 0.35 - 0.65
+            const isHeadStraight = (yawRatio > 0.35 && yawRatio < 0.65);
+            
+            if (!isHeadStraight) {
+                // Hướng dẫn cụ thể hướng quay
+                const msg = yawRatio < 0.35 ? "Quay mặt sang PHẢI chút >>" : "<< Quay mặt sang TRÁI chút";
+                updateUI("warning", msg, false);
+                faceBoxEl.style.borderColor = "#ffc107";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            // 5. CHECK GÓC NGHIÊNG (PITCH - NGƯỚC/CÚI)
+            const faceHeight = getDistance(landmarks[10], landmarks[152]);
+            const noseToTop = getDistance(landmarks[1], landmarks[10]);
+            const pitchRatio = noseToTop / faceHeight;
+
+            if (pitchRatio < 0.35) {
+                updateUI("warning", "Hạ cằm xuống!", false);
+                resetScanning(); canvasCtx.restore(); return;
+            }
+            if (pitchRatio > 0.65) {
+                updateUI("warning", "Ngẩng mặt lên!", false);
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            // 6. CHECK MẮT (ĐỘ MỞ & HƯỚNG NHÌN)
+            const leftEyeHeight = getDistance(landmarks[159], landmarks[145]);
+            const leftEyeWidth = getDistance(landmarks[33], landmarks[133]);
+            const eyeOpenRatio = leftEyeHeight / leftEyeWidth;
+            
+            if (eyeOpenRatio < 0.18) { 
+                updateUI("warning", "Mở to mắt ra!", false);
+                faceBoxEl.style.borderColor = "#ffc107";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+
+            if (landmarks[473] && landmarks[468]) {
+                const gazeLeft = getGazeRatio(landmarks[473], landmarks[33], landmarks[133]);
+                const gazeRight = getGazeRatio(landmarks[468], landmarks[362], landmarks[263]);
+                
+                // Threshold nhìn: 0.30 - 0.70
+                const isLookingStraight = (gazeLeft > 0.30 && gazeLeft < 0.70) && 
+                                        (gazeRight > 0.30 && gazeRight < 0.70);
+                                        
+                if (!isLookingStraight) {
+                    updateUI("warning", "Nhìn thẳng màn hình!", false);
+                    faceBoxEl.style.borderColor = "#ffc107";
+                    resetScanning(); canvasCtx.restore(); return;
+                }
+            }
+
+            // 7. CHECK BIỂU CẢM (CƯỜI/NHĂN)
+            const mouthWidth = getDistance(landmarks[61], landmarks[291]);
+            const jawWidth = getDistance(landmarks[172], landmarks[397]); 
+            const smileRatio = mouthWidth / jawWidth;
+
+            if (smileRatio > 0.55) { 
+                updateUI("warning", "Đừng cười!", false);
+                faceBoxEl.style.borderColor = "#ffc107";
+                resetScanning(); canvasCtx.restore(); return;
+            }
+            
+            // === ĐẠT CHUẨN ===
+            updateUI("success", "Giữ nguyên... Đang quét", true);
+            faceBoxEl.style.borderColor = "#198754";
+            
+            if (sampleCount < REQUIRED_SAMPLES) {
+                const sig = calculateFaceSignature(landmarks);
+                if (sig) {
+                    sig.forEach((val, i) => faceVectorSum[i] += val);
+                    sampleCount++;
+                    const pct = Math.floor((sampleCount / REQUIRED_SAMPLES) * 100);
+                    document.getElementById('progress-container').style.display = 'flex';
+                    document.getElementById('progress-bar').style.width = `${pct}%`;
+
+                    if (sampleCount === REQUIRED_SAMPLES) finishScanning();
+                }
+            }
+            canvasCtx.restore();
+        }
+        function resetScanning() {
+            sampleCount = 0;
+            document.getElementById('progress-bar').style.width = '0%';
+        }
+
+        function updateUI(type, msg, isScanning) {
+            if (isFinished) return; 
+            statusEl.innerText = msg;
+            statusEl.className = `fw-bold text-${type}`;
+            
+            let icon = 'exclamation-triangle';
+            let color = 'rgba(220, 53, 69, 0.8)';
+            
+            if (type === 'success') {
+                icon = 'check-circle';
+                color = 'rgba(25, 135, 84, 0.8)';
+            } else if (type === 'warning') {
+                color = 'rgba(255, 193, 7, 0.9)'; 
+                guideEl.style.color = '#000';
+            } else {
+                guideEl.style.color = 'white';
+            }
+
+            guideEl.innerHTML = `<i class="fas fa-${icon}"></i> ${msg}`;
+            guideEl.style.backgroundColor = color;
+            scannerEl.style.display = isScanning ? 'block' : 'none';
+        }
+
+        function finishScanning() {
+            isFinished = true; 
+            const finalSignature = faceVectorSum.map(val => val / REQUIRED_SAMPLES);
+            sessionStorage.setItem('faceSignature', JSON.stringify(finalSignature));
+            camera.stop(); 
+            videoElement.srcObject = null;
+            scannerEl.style.display = 'none';
+            faceBoxEl.style.borderColor = "#198754";
+            faceBoxEl.style.boxShadow = "0 0 20px #198754";
+            document.getElementById('progress-container').style.display = 'none';
+            statusEl.className = "fw-bold text-success animate__animated animate__tada";
+            statusEl.innerHTML = '<i class="fas fa-check-circle fa-2x"></i><br>Xác thực thành công!';
+            guideEl.style.display = 'none';
+            document.getElementById('btn-start').style.display = 'inline-block';
+        }
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                if (isFinished || isProcessing) return; 
+                isProcessing = true;
+                frameCounter++;
+                try {
+                    if (frameCounter % 5 === 0) await hands.send({image: videoElement});
+                    else await faceMesh.send({image: videoElement});
+                } catch (e) { console.error(e); }
+                isProcessing = false; 
+            },
+            width: 640, height: 480
+        });
+        camera.start();
+
+        function startExam() { 
+            allowNavigation = true;
+            window.location.href = '/student/exam.html'; 
+        }
+    </script>
+</body>
+</html>

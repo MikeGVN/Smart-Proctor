@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+    <meta charset="UTF-8">
+    <title>Smart Proctor - Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0f172a;       /* Xanh đen đậm */
+            --bg-card: #1e293b;       /* Xanh xám card */
+            --border: #334155;
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* --- 1. HEADER GLASSMORPHISM --- */
+        .monitor-header {
+            height: 70px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a855f7);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .control-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 6px 15px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        input[type=range] {
+            accent-color: var(--primary);
+            width: 150px;
+            cursor: pointer;
+        }
+
+        /* --- 2. GRID AREA --- */
+        .monitor-body {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            /* Pattern nền lưới mờ */
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .video-grid {
+            display: grid;
+            /* Tự động điền đầy, tối thiểu 200px */
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            padding-bottom: 50px;
+        }
+
+        /* --- 3. CAMERA CARD --- */
+        .student-cam {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4/3;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .student-cam:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            border-color: var(--primary);
+        }
+
+        .cam-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Lật ngược video cho đúng chiều gương */
+            transform: scaleX(-1);
+            background: #000;
+        }
+
+        /* Overlay thông tin */
+        .cam-info {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 40px 12px 10px 12px;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95), transparent);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 2;
+        }
+
+        .student-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 120px;
+        }
+        .student-id {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-weight: 600;
+        }
+
+        /* --- 4. VIOLATION MODE --- */
+        .student-cam.violation {
+            border: 2px solid var(--danger);
+            animation: pulse-red 1s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .violation-overlay {
+            position: absolute; top:0; left:0; right:0; bottom:0;
+            background: rgba(239, 68, 68, 0.2);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            backdrop-filter: blur(2px);
+        }
+        
+        .violation-text {
+            background: var(--danger);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } 100% { transform: translateX(0); } }
+
+        /* --- 5. EMPTY STATE (Màn hình chờ) --- */
+        #waiting-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-sub);
+            transition: opacity 0.3s;
+        }
+        
+        .radar-spinner {
+            width: 80px; height: 80px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- 6. SCAN LINE EFFECT (Hiệu ứng quét AI) --- */
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(59, 130, 246, 0.8);
+            box-shadow: 0 0 10px var(--primary);
+            opacity: 0.6;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="monitor-header">
+        <div class="d-flex align-items-center gap-3">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-circle" style="width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div class="brand"><i class="fas fa-eye me-2"></i>Smart Proctor</div>
+                <div style="font-size: 0.75rem; color: var(--text-sub);">Phòng thi: <span id="room-code" class="text-white fw-bold">...</span></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <i class="fas fa-search-minus text-secondary small"></i>
+            <input type="range" min="150" max="400" value="220" oninput="adjustZoom(this.value)">
+            <i class="fas fa-search-plus text-secondary small"></i>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <div class="fw-bold" style="font-size: 1.1rem" id="online-count">0</div>
+                <div style="font-size: 0.65rem; text-transform:uppercase; color: var(--text-sub)">Thí sinh</div>
+            </div>
+            <div class="badge bg-danger bg-opacity-10 text-danger border border-danger p-2 rounded-pill animate__animated animate__flash animate__infinite">
+                <i class="fas fa-circle small me-1"></i> LIVE
+            </div>
+        </div>
+    </div>
+
+    <div class="monitor-body">
+        
+        <div id="waiting-screen">
+            <div class="radar-spinner"></div>
+            <h5 class="fw-light">Đang chờ tín hiệu vệ tinh...</h5>
+            <small>Hệ thống sẽ tự động kết nối khi sinh viên vào phòng</small>
+        </div>
+
+        <div class="video-grid" id="grid">
+            </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        document.getElementById('room-code').innerText = code || "Unknown";
+
+        const socket = io();
+        socket.emit('teacher-join', code);
+
+        const grid = document.getElementById('grid');
+        const waitingScreen = document.getElementById('waiting-screen');
+        const countDisplay = document.getElementById('online-count');
+        let onlineCount = 0;
+
+        // Chỉnh kích thước Grid
+        function adjustZoom(size) {
+            // Dùng auto-fill để grid không bị dãn to khi ít người
+            grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${size}px, 1fr))`;
+        }
+
+        // 1. NHẬN STREAM ẢNH
+        socket.on('student-stream', (data) => {
+            const { id, image } = data;
+            const img = document.getElementById(`img-${id}`);
+            if(img) img.src = image;
+        });
+
+        // 2. SINH VIÊN MỚI VÀO
+        socket.on('new-student', (data) => {
+            const { id, name, studentId } = data;
+            
+            if (!document.getElementById(`cam-${id}`)) {
+                // Ẩn màn hình chờ
+                waitingScreen.style.display = 'none';
+                
+                // Tăng biến đếm
+                onlineCount++;
+                countDisplay.innerText = onlineCount;
+
+                const div = document.createElement('div');
+                div.className = 'student-cam animate__animated animate__fadeIn';
+                div.id = `cam-${id}`;
+                
+                // HTML cấu trúc mới
+                div.innerHTML = `
+                    <div class="scan-line"></div>
+                    <div class="violation-overlay" id="alert-overlay-${id}">
+                        <div class="violation-text" id="alert-msg-${id}">⚠️ CẢNH BÁO</div>
+                    </div>
+                    
+                    <img id="img-${id}" class="cam-img" src="https://via.placeholder.com/300?text=Connecting..." alt="Cam">
+                    
+                    <div class="cam-info">
+                        <div>
+                            <div class="student-name" title="${name}">${name}</div>
+                            <div class="student-id">${studentId}</div>
+                        </div>
+                        <div class="status-badge" id="status-${id}"><i class="fas fa-wifi me-1"></i>On</div>
+                    </div>
+                `;
+                grid.appendChild(div);
+            }
+        });
+
+        // 3. XỬ LÝ VI PHẠM (HIỆN ĐẠI HƠN)
+        socket.on('student-violation', (data) => {
+            const { id, msg } = data;
+            const cam = document.getElementById(`cam-${id}`);
+            const overlay = document.getElementById(`alert-overlay-${id}`);
+            const msgBox = document.getElementById(`alert-msg-${id}`);
+            
+            if(cam && overlay) {
+                // Thêm class để viền đỏ nhấp nháy
+                cam.classList.add('violation');
+                
+                // Hiện overlay che mờ
+                msgBox.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> ${msg}`;
+                overlay.style.display = 'flex';
+
+                // Tự tắt sau 4s
+                setTimeout(() => {
+                    cam.classList.remove('violation');
+                    overlay.style.display = 'none';
+                }, 4000);
+            }
+        });
+
+        // 4. NỘP BÀI XONG
+        socket.on('student-finished', (data) => {
+            const badge = document.getElementById(`status-${data.id}`);
+            if(badge) {
+                badge.innerHTML = `<i class="fas fa-check-circle"></i> ${data.score}đ`;
+                badge.style.background = 'rgba(59, 130, 246, 0.2)';
+                badge.style.color = '#60a5fa';
+                badge.style.borderColor = '#60a5fa';
+                
+                const cam = document.getElementById(`cam-${data.id}`);
+                if(cam) cam.style.opacity = '0.6';
+            }
+        });
+
+        // 5. THOÁT
+        socket.on('student-left', (data) => {
+            const cam = document.getElementById(`cam-${data.id}`);
+            if(cam) {
+                cam.remove();
+                onlineCount--;
+                countDisplay.innerText = onlineCount;
+                
+                // Nếu không còn ai thì hiện lại màn hình chờ
+                if(onlineCount === 0) waitingScreen.style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>

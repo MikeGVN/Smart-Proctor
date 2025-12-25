@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Proctor - Cổng Thi Trực Tuyến</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* CSS Riêng cho Tab chuyển đổi */
+        .nav-pills .nav-link {
+            color: #555; font-weight: 600; border-radius: 30px; padding: 8px 20px;
+        }
+        .nav-pills .nav-link.active {
+            background-color: var(--primary); color: white;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+        .form-section { display: none; animation: fadeIn 0.4s ease; }
+        .form-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <nav class="glass-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="#" class="brand-logo">
+                <i class="fas fa-rocket me-2"></i> Smart Proctor
+            </a>
+            
+            <ul class="nav nav-pills bg-white p-1 rounded-pill border d-none d-md-flex">
+                <li class="nav-item">
+                    <a class="nav-link active cursor-pointer" onclick="switchTab('exam')">
+                        <i class="fas fa-pen-nib me-1"></i> Làm Bài Thi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link cursor-pointer" onclick="switchTab('score')">
+                        <i class="fas fa-search me-1"></i> Xem Điểm
+                    </a>
+                </li>
+            </ul>
+
+            <a href="/teacher/dashboard.html" class="btn-teacher-login">
+                <i class="fas fa-chalkboard-teacher me-2"></i> GV Login
+            </a>
+        </div>
+        
+        <div class="container d-md-none mt-3 text-center">
+             <div class="btn-group w-100" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="switchTab('exam')">Làm Bài</button>
+                <button type="button" class="btn btn-outline-primary" onclick="switchTab('score')">Xem Điểm</button>
+             </div>
+        </div>
+    </nav>
+
+    <div class="login-wrapper position-relative">
+        <div class="overlay-bg"></div> 
+        
+        <div class="glass-card text-center" style="max-width: 550px;"> <div id="section-exam" class="form-section active">
+                <div class="mb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" width="70" alt="Icon">
+                    <h3 class="mt-2 fw-bold text-dark">Vào Phòng Thi</h3>
+                    <p class="text-muted small">Nhập thông tin cá nhân để điểm danh</p>
+                </div>
+
+                <form onsubmit="event.preventDefault(); checkExam();">
+                    <div class="row">
+                        <div class="col-12 mb-3 text-start">
+                            <label class="fw-bold small text-secondary mb-1">HỌ VÀ TÊN <span class="text-danger">*</span></label>
+                            <input type="text" id="stdName" class="form-control" placeholder="VD: Nguyễn Văn A" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3 text-start">
+                            <label class="fw-bold small text-secondary mb-1">LỚP (Nếu có)</label>
+                            <input type="text" id="stdClass" class="form-control" placeholder="VD: 12A1">
+                        </div>
+                        <div class="col-md-6 mb-3 text-start">
+                            <label class="fw-bold small text-secondary mb-1">MSSV (Nếu có)</label>
+                            <input type="text" id="stdId" class="form-control" placeholder="VD: 2025001">
+                        </div>
+
+                        <div class="col-12 mb-4 text-start">
+                            <label class="fw-bold small text-secondary mb-1">MÃ ĐỀ THI <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-key"></i></span>
+                                <input type="text" id="roomCode" class="form-control fw-bold text-primary" placeholder="Nhập mã do GV cung cấp" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gradient-primary">
+                        BẮT ĐẦU THI <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="section-score" class="form-section">
+                <div class="mb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1041/1041883.png" width="70" alt="Icon">
+                    <h3 class="mt-2 fw-bold text-dark">Tra Cứu Kết Quả</h3>
+                    <p class="text-muted small">Xem lại điểm số bài thi đã nộp</p>
+                </div>
+
+                <form onsubmit="event.preventDefault(); checkScore();">
+                    <div class="mb-3 text-start">
+                        <label class="fw-bold small text-secondary mb-1">MÃ BÀI LÀM (Mã Đề) <span class="text-danger">*</span></label>
+                        <input type="text" id="scoreCode" class="form-control" placeholder="Nhập mã đề thi..." required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-7 mb-3 text-start">
+                            <label class="fw-bold small text-secondary mb-1">HỌ VÀ TÊN <span class="text-danger">*</span></label>
+                            <input type="text" id="scoreName" class="form-control" placeholder="Nhập đúng tên lúc thi" required>
+                        </div>
+                        <div class="col-md-5 mb-4 text-start">
+                            <label class="fw-bold small text-secondary mb-1">MSSV (Nếu có)</label>
+                            <input type="text" id="scoreId" class="form-control" placeholder="Mã số...">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-3 rounded-3 shadow-sm">
+                        <i class="fas fa-search me-2"></i> TRA CỨU NGAY
+                    </button>
+                </form>
+
+                <div id="result-display" class="mt-4 p-3 bg-light rounded border d-none">
+                    <h5 class="fw-bold text-primary mb-1">KẾT QUẢ CỦA BẠN</h5>
+                    <div class="display-4 fw-bold text-danger" id="result-score">0.0</div>
+                    <small class="text-muted">Điểm số cuối cùng</small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5 mb-4">
+                    <h5 class="footer-heading">Smart Proctor Technology</h5>
+                    <p>Hệ thống thi trắc nghiệm trực tuyến thông minh, tích hợp AI giám sát hành vi, đảm bảo công bằng và minh bạch cho giáo dục.</p>
+                </div>
+                <div class="col-md-7 mb-4 text-md-end">
+                    <p class="mb-1"><i class="fas fa-code me-2"></i>Phát triển bởi <strong>Smart Proctor Team</strong></p>
+                    <p class="text-muted small">&copy; 2025 IT Talent Contest</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 1. LOGIC CHUYỂN TAB
+        function switchTab(tabName) {
+            // Ẩn hết các section
+            document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.btn-outline-primary').forEach(el => el.classList.remove('active'));
+
+            // Hiện section được chọn
+            document.getElementById(`section-${tabName}`).classList.add('active');
+            
+            // Active nút menu tương ứng (Xử lý UI đơn giản)
+            const links = document.querySelectorAll(`.nav-link`);
+            if(tabName === 'exam') links[0].classList.add('active');
+            else links[1].classList.add('active');
+        }
+
+        // 2. LOGIC VÀO THI (ĐÃ CẬP NHẬT TRƯỜNG MỚI)
+        async function checkExam() {
+            sessionStorage.removeItem('isFinished'); 
+            sessionStorage.removeItem('examResult');
+            const name = document.getElementById('stdName').value.trim();
+            const stdClass = document.getElementById('stdClass').value.trim();
+            const stdId = document.getElementById('stdId').value.trim();
+            const code = document.getElementById('roomCode').value.trim();
+            
+            try {
+                const res = await fetch('/api/join-exam', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    // Gửi thêm class và studentId lên server
+                    body: JSON.stringify({ code, name, studentId: stdId, studentClass: stdClass })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    // 1. Lưu thông tin vào Session (Giữ nguyên phần này của bạn)
+                    sessionStorage.setItem('studentName', name);
+                    sessionStorage.setItem('studentClass', stdClass);
+                    sessionStorage.setItem('studentId', stdId);
+                    sessionStorage.setItem('examData', JSON.stringify(data.exam));
+                    sessionStorage.setItem('attemptStart', Date.now());
+                    // 2. [MỚI] Hiện cảnh báo xác nhận trước khi chuyển trang
+                    Swal.fire({
+                        title: 'Yêu cầu xác thực giám sát',
+                        icon: 'info',
+                        html: `
+                            <div class="text-start" style="font-size: 0.95rem; line-height: 1.6;">
+                                <p>Chào <strong>${name}</strong>, để vào làm bài thi, bạn cần thực hiện bước <strong>xác thực khuôn mặt (FaceID)</strong>.</p>
+                                <div class="alert alert-warning p-2 small">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> <strong>Lưu ý quan trọng:</strong>
+                                    <ul class="mb-0 ps-3">
+                                        <li>Hệ thống sẽ bật Camera để quét khuôn mặt.</li>
+                                        <li>Vui lòng ngồi nơi đủ ánh sáng.</li>
+                                        <li>Không đeo khẩu trang hoặc che mặt.</li>
+                                    </ul>
+                                </div>
+                                <p class="mb-0 text-center fw-bold text-primary">Bạn đã sẵn sàng chưa?</p>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#4361ee', // Màu xanh chủ đạo (var(--primary))
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-camera me-2"></i>Đồng ý & Mở Camera',
+                        cancelButtonText: 'Để sau',
+                        allowOutsideClick: false, // Bắt buộc phải chọn, không cho click ra ngoài
+                        backdrop: `rgba(0,0,123,0.4)` // Làm tối nền xung quanh
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Người dùng bấm Đồng ý thì mới chuyển sang trang check Face
+                            window.location.href = '/student/face-check.html';
+                        }
+                    });
+
+                } else {
+                    // (Giữ nguyên phần xử lý lỗi else của bạn)
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể vào thi',
+                        text: data.msg || 'Mã đề thi không tồn tại hoặc đã đóng!',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi Kết Nối',
+                    text: 'Không thể kết nối đến máy chủ. Vui lòng thử lại!',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+
+        // 3. LOGIC TRA CỨU ĐIỂM (ĐÃ SỬA: CHUYỂN TRANG)
+        async function checkScore() {
+            const code = document.getElementById('scoreCode').value.trim();
+            const name = document.getElementById('scoreName').value.trim();
+            const stdId = document.getElementById('scoreId').value.trim();
+
+            if(!code || !name) return Swal.fire('Thiếu thông tin', 'Nhập Mã đề và Họ tên', 'warning');
+
+            Swal.fire({ title: 'Đang tra cứu...', didOpen: () => Swal.showLoading() });
+
+            try {
+                const res = await fetch('/api/check-result', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code, name, studentId: stdId })
+                });
+                const data = await res.json();
+                Swal.close();
+
+                if(data.success) {
+                    // [QUAN TRỌNG] 
+                    // 1. Lưu bài mới nhất để hiện to đùng
+                    sessionStorage.setItem('examResult', JSON.stringify(data.results[0]));
+                    
+                    // 2. Lưu toàn bộ lịch sử để hiện danh sách
+                    sessionStorage.setItem('examHistory', JSON.stringify(data.results));
+                    
+                    // Chuyển hướng sang trang Score
+                    window.location.href = '/student/score.html';
+                } else {
+                    Swal.fire('Không tìm thấy', data.msg, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Lỗi', 'Lỗi kết nối server.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

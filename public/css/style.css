@@ -1,0 +1,216 @@
+/* public/css/style.css */
+
+/* 1. IMPORTS & BIẾN MÔI TRƯỜNG */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+:root {
+    --primary: #4361ee;
+    --primary-hover: #3a56d4;
+    --secondary: #7209b7;
+    --success: #198754;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --text-dark: #1e1e2f;
+    --bg-light: #f3f4f6;
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+/* 2. HEADER (ĐÃ ĐỒNG BỘ TO & ĐẸP) */
+.glass-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding: 15px 0; /* Tăng padding để Header to hơn */
+    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.brand-logo {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.6rem; /* Tăng kích thước chữ Logo */
+    font-weight: 800;
+    background: linear-gradient(to right, #4361ee, #f72585);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none;
+}
+
+.btn-teacher-login {
+    background: white; border: 2px solid var(--primary); color: var(--primary);
+    padding: 8px 24px; border-radius: 30px; font-weight: 700; text-decoration: none;
+    transition: 0.3s; font-size: 0.95rem;
+}
+.btn-teacher-login:hover { background: var(--primary); color: white; }
+
+/* 3. FOOTER */
+.main-footer {
+    background: #0f172a; color: #94a3b8; padding: 50px 0 20px; margin-top: auto; font-size: 0.95rem;
+}
+.footer-heading { color: white; font-weight: 700; margin-bottom: 20px; font-size: 1.1rem; }
+.footer-links a { display: block; color: #94a3b8; text-decoration: none; margin-bottom: 10px; transition: 0.2s; }
+.footer-links a:hover { color: white; padding-left: 5px; }
+
+/* 4. TRANG LOGIN (INDEX) */
+.login-wrapper {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: url('https://source.unsplash.com/random/1920x1080/?technology,abstract') no-repeat center center/cover;
+    position: relative; padding: 20px;
+}
+.overlay-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+    backdrop-filter: blur(5px);
+}
+.glass-card {
+    position: relative; z-index: 2;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px; padding: 45px;
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 480px;
+}
+.btn-gradient-primary {
+    background: linear-gradient(45deg, #4361ee, #3a0ca3);
+    border: none; color: white; padding: 14px;
+    border-radius: 12px; font-weight: 700; width: 100%; transition: 0.3s; font-size: 1.1rem;
+}
+.btn-gradient-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4); }
+
+/* 5. TRANG DASHBOARD GIÁO VIÊN */
+.stat-card {
+    background: white; padding: 25px; border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05);
+}
+.btn-primary-gradient {
+    background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; text-decoration: none;
+}
+
+/* 6. TRANG LÀM BÀI (EXAM MODE) */
+.student-mode { background-color: #f8f9fa; }
+.exam-wrapper { padding-bottom: 80px; }
+
+/* Nav Box */
+.nav-box {
+    background: white; 
+    padding: 12px 20px; 
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+    
+    /* [QUAN TRỌNG] Logic mới */
+    display: flex; 
+    justify-content: space-between; /* Đẩy 2 nút Previous/Next ra 2 mép ngoài cùng */
+    align-items: center;
+    position: relative; /* Để thằng con absolute bám theo thằng này */
+}
+.nav-center { 
+    display: flex; 
+    gap: 8px; 
+    overflow-x: auto; 
+    padding: 5px; 
+    scrollbar-width: none;
+    
+    /* [QUAN TRỌNG] Logic "abso" (Absolute) */
+    position: absolute;       /* Tách ra khỏi dòng chảy layout bình thường */
+    left: 50%;                /* Đặt điểm bắt đầu ở chính giữa container */
+    transform: translateX(-50%); /* Kéo ngược lại 50% độ rộng của chính nó để vào tâm chuẩn */
+    
+    max-width: 50%;           /* Giới hạn chiều rộng để không đè lên 2 nút bên cạnh */
+    justify-content: center;  /* Căn giữa các số bên trong */
+}
+.nav-btn-number {
+    width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; border: 1px solid #e9ecef; background: white; color: var(--text-dark);
+    font-weight: 600; cursor: pointer; transition: 0.2s; user-select: none;
+}
+.nav-btn-number:hover { background: #f8f9fa; border-color: var(--primary); }
+.nav-btn-number.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
+.nav-btn-number.answered { background: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+
+.nav-control-btn {
+    border: none; background: #f1f3f5; color: #495057; padding: 10px 18px;
+    border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+}
+.nav-control-btn.btn-next { background: var(--primary); color: white; }
+.nav-control-btn.btn-next:hover { background: var(--primary-hover); }
+
+/* Câu hỏi */
+.question-card {
+    pointer-events: none;      /* CHUẨN: Chuột không thể tương tác (click/hover) */
+    
+    /* THÊM CÁC DÒNG NÀY ĐỂ CHẶN BÔI ĐEN (Phòng hờ) */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    background: white; 
+    border-radius: 20px; 
+    padding: 35px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+    min-height: 450px;
+    border: 1px solid rgba(0,0,0,0.02);
+}
+.option-box {
+    position: relative; background: white; border: 2px solid #f1f3f5;
+    border-radius: 12px; padding: 18px 20px; transition: all 0.2s; overflow: hidden;
+}
+.option-box.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); font-weight: 600; }
+.loading-bar {
+    position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
+    background: var(--primary); transition: width 0s;
+}
+.option-box.loading .loading-bar { width: 100%; transition: width 0.5s linear; }
+
+/* Camera */
+.camera-card {
+    background: white; border-radius: 20px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03);
+}
+.camera-wrapper {
+    position: relative; background: #000; border-radius: 12px; overflow: hidden;
+    width: 100%; aspect-ratio: 4/3; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+/* FIX LỖI CAMERA NGƯỢC: BỎ scaleX(-1) */
+.input_video, .output_canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* QUAN TRỌNG: Lật ngược lại */
+}
+.input_video { z-index: 1; opacity: 0; }
+.output_canvas { z-index: 2; }
+
+.ai-loading-overlay {
+    position: absolute; inset: 0; z-index: 10; background: rgba(0,0,0,0.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: white; backdrop-filter: blur(2px);
+}
+
+/* Cheat Overlay */
+#cheat-overlay {
+    position: fixed; inset: 0; background: rgba(220, 53, 69, 0.98);
+    z-index: 9999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; color: white;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+#cheat-overlay.active { opacity: 1; pointer-events: auto; }
+.cheat-timer {
+    font-family: 'Courier New', monospace; font-size: 6rem; font-weight: 800;
+    margin: 20px 0; text-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+}

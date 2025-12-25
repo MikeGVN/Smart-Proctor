@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+    <meta charset="UTF-8">
+    <title>Đăng Nhập Giảng Viên - Smart Proctor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .login-container {
+            min-height: 80vh; 
+            display: flex; align-items: center; justify-content: center;
+            background: #f8f9fa;
+        }
+        .auth-box { display: none; animation: fadeIn 0.4s; }
+        .auth-box.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* CSS cho con mắt hiện pass */
+        .cursor-pointer { cursor: pointer; }
+        .input-group-text { background: white; border-left: 0; }
+        .form-control-pass { border-right: 0; }
+    </style>
+</head>
+<body>
+
+    <nav class="glass-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/" class="brand-logo">
+                <i class="fas fa-rocket me-2"></i> Smart Proctor
+            </a>
+            <a href="/" class="btn btn-light rounded-pill border fw-bold text-secondary text-decoration-none px-3">
+                <i class="fas fa-arrow-left me-2"></i> Sinh Viên
+            </a>
+        </div>
+    </nav>
+
+    <div class="login-container">
+        <div class="glass-card p-5 text-center shadow-lg" style="width: 100%; max-width: 450px; border-radius: 20px;">
+            <div class="mb-4">
+                <div class="d-inline-block p-3 rounded-circle bg-primary bg-opacity-10 mb-2">
+                    <i class="fas fa-chalkboard-teacher fa-2x text-primary"></i>
+                </div>
+                <h3 class="fw-bold mt-2">Cổng Giảng Viên</h3>
+                <p class="text-muted small">Đăng nhập để quản lý kỳ thi</p>
+            </div>
+
+            <div id="box-login" class="auth-box active">
+                <form onsubmit="event.preventDefault(); doLogin()">
+                    <div class="mb-3 text-start">
+                        <label class="small fw-bold text-secondary">EMAIL</label>
+                        <input type="email" id="loginEmail" class="form-control" placeholder="teacher@email.com" required>
+                    </div>
+                    
+                    <div class="mb-4 text-start">
+                        <label class="small fw-bold text-secondary">MẬT KHẨU</label>
+                        <div class="input-group">
+                            <input type="password" id="loginPass" class="form-control form-control-pass" placeholder="••••••" required>
+                            <span class="input-group-text cursor-pointer" onclick="togglePass('loginPass', this)">
+                                <i class="fas fa-eye text-muted"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gradient-primary w-100 fw-bold py-2 mb-3 shadow-sm">
+                        ĐĂNG NHẬP
+                    </button>
+                    <p class="small text-muted">Chưa có tài khoản? <a href="#" class="text-primary fw-bold text-decoration-none" onclick="switchView('register')">Đăng ký ngay</a></p>
+                </form>
+            </div>
+
+            <div id="box-register" class="auth-box">
+                <form onsubmit="event.preventDefault(); doRegister()">
+                    <div class="mb-3 text-start">
+                        <label class="small fw-bold text-secondary">HỌ VÀ TÊN</label>
+                        <input type="text" id="regName" class="form-control" placeholder="Nguyễn Văn A" required>
+                    </div>
+                    <div class="mb-3 text-start">
+                        <label class="small fw-bold text-secondary">EMAIL</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="teacher@email.com" required>
+                    </div>
+                    
+                    <div class="mb-4 text-start">
+                        <label class="small fw-bold text-secondary">MẬT KHẨU</label>
+                        <div class="input-group">
+                            <input type="password" id="regPass" class="form-control form-control-pass" required>
+                            <span class="input-group-text cursor-pointer" onclick="togglePass('regPass', this)">
+                                <i class="fas fa-eye text-muted"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 mb-3 shadow-sm">
+                        ĐĂNG KÝ TÀI KHOẢN
+                    </button>
+                    <p class="small text-muted">Đã có tài khoản? <a href="#" class="text-primary fw-bold text-decoration-none" onclick="switchView('login')">Đăng nhập</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h5 class="footer-heading text-white">Smart Proctor Technology</h5>
+                    <p class="small text-white-50">Hệ thống thi trắc nghiệm trực tuyến thông minh, tích hợp AI giám sát hành vi.</p>
+                </div>
+                <div class="col-md-6 mb-3 text-md-end">
+                    <p class="mb-1 text-white"><i class="fas fa-code me-2"></i>Phát triển bởi <strong>SmartProctor Team</strong></p>
+                    <p class="text-white-50 small">&copy; 2025 IT Talent Contest</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 1. Logic chuyển đổi Tab
+        function switchView(view) {
+            document.querySelectorAll('.auth-box').forEach(el => el.classList.remove('active'));
+            document.getElementById(`box-${view}`).classList.add('active');
+        }
+
+        // 2. Logic Bật/Tắt xem mật khẩu
+        function togglePass(inputId, iconSpan) {
+            const input = document.getElementById(inputId);
+            const icon = iconSpan.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // 3. Logic Đăng Nhập (Thêm SweetAlert đẹp)
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+
+            try {
+                const res = await fetch('/api/teacher/login', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if(data.success) {
+                    sessionStorage.setItem('teacherName', data.teacher.name);
+                    sessionStorage.setItem('teacherEmail', data.teacher.email);
+                    
+                    // Hiện thông báo thành công trước khi chuyển trang
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đăng nhập thành công!',
+                        text: `Chào mừng GV. ${data.teacher.name}`,
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        window.location.href = '/teacher/dashboard.html';
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Thất bại', text: data.msg, confirmButtonColor: '#dc3545' });
+                }
+            } catch (err) { Swal.fire('Lỗi', 'Không kết nối được server', 'error'); }
+        }
+
+        // 4. Logic Đăng Ký (Thêm SweetAlert đẹp)
+        async function doRegister() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPass').value;
+
+            try {
+                const res = await fetch('/api/teacher/register', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+
+                if(data.success) {
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Tạo tài khoản thành công!', 
+                        text: 'Vui lòng đăng nhập để tiếp tục.', 
+                        timer: 2000, 
+                        showConfirmButton: false 
+                    });
+                    switchView('login');
+                } else {
+                    Swal.fire('Lỗi', data.msg, 'error');
+                }
+            } catch (err) { Swal.fire('Lỗi', 'Không kết nối được server', 'error'); }
+        }
+    </script>
+</body>
+</html>

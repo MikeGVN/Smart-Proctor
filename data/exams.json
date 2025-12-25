@@ -1,0 +1,75 @@
+[
+  {
+    "title": "NHẬP MÔN LẬP TRÌNH VUI VẺ",
+    "code": "CODE_BASIC_01",
+    "duration": 15,
+    "maxAttempts": 3,
+    "startTime": "",
+    "endTime": "",
+    "questions": [
+      {
+        "question": "Câu lệnh huyền thoại đầu tiên mà mọi lập trình viên đều viết khi bắt đầu học code là gì?",
+        "type": "single",
+        "options": {
+          "A": "Hello Kitty",
+          "B": "Hello World",
+          "C": "Xin chào Crush",
+          "D": "System Hacked"
+        },
+        "correct": ["B"],
+        "correctCount": 1
+      },
+      {
+        "question": "Trong hầu hết các ngôn ngữ lập trình, chỉ số (index) của phần tử đầu tiên trong mảng bắt đầu bằng số mấy?",
+        "type": "single",
+        "options": {
+          "A": "Số 1 (Vì nó là thứ nhất)",
+          "B": "Số 0 (Start from Zero)",
+          "C": "Số 10",
+          "D": "Số -1"
+        },
+        "correct": ["B"],
+        "correctCount": 1
+      },
+      {
+        "question": "Hành động tìm và sửa lỗi trong code được gọi là gì?",
+        "type": "single",
+        "options": {
+          "A": "Boxing",
+          "B": "Swimming",
+          "C": "Debugging",
+          "D": "Crying"
+        },
+        "correct": ["C"],
+        "correctCount": 1
+      },
+      {
+        "question": "Nếu bạn viết một vòng lặp `while(true)` mà không có lệnh thoát (break), chuyện gì sẽ xảy ra?",
+        "type": "single",
+        "options": {
+          "A": "Máy tính sẽ tự tắt nguồn",
+          "B": "Chương trình chạy vô tận (Infinite Loop)",
+          "C": "Chương trình tự sửa lỗi",
+          "D": "Bạn sẽ trở thành Hacker"
+        },
+        "correct": ["B"],
+        "correctCount": 1
+      },
+      {
+        "question": "Đâu là tên biến hợp lệ và 'chuẩn cơm mẹ nấu' (camelCase) thường dùng trong JS/Java?",
+        "type": "single",
+        "options": {
+          "A": "ten_cua_toi",
+          "B": "123Ten",
+          "C": "myVariableName",
+          "D": "MY-VARIABLE"
+        },
+        "correct": ["C"],
+        "correctCount": 1
+      }
+    ],
+    "active": true,
+    "id": 1766582999999,
+    "createdAt": "2025-12-25T08:00:00.000Z"
+  }
+]
